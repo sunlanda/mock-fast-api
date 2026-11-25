@@ -74,7 +74,6 @@ jobs:
           if (-not (Test-Path "node_modules\electron\dist\electron.exe")) {
             throw "Electron binary is missing after install.js"
           }
-          & "node_modules\.bin\electron.cmd" --version
 
       - name: Build bundled Python backend
         working-directory: desktop
