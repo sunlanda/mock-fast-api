@@ -1,0 +1,51 @@
+name: Feature request
+description: 提出一个功能或体验改进
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先描述使用场景，而不是只给实现方案。MockFast 优先服务“本机快速联调”的场景。
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 你在做什么？现在卡在哪里？
+      placeholder: 我想把生成的接口直接接入公司的 axios 封装…
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的方案
+      placeholder: 支持自定义响应模板 / 增加某某数据库适配器…
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及模块
+      options:
+        - 数据源 / 连接
+        - 模板 / Mock 生成
+        - 数据浏览器
+        - SQL 控制台 / 安全守卫
+        - 调用日志
+        - 前端体验 / 主题
+        - 文档 / 其他
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 我已经搜索过现有 Issues 和 README
+          required: true
+        - label: 这个需求符合“本地开发 Mock 工具”的定位
+          required: true

@@ -1,0 +1,81 @@
+name: Bug report
+description: 报告一个可复现的问题
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请先确认已经阅读 README 的「常见问题」，并尽量提供可复现步骤。
+        请勿粘贴真实数据库密码、Token 或生产连接串。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么？
+      description: 实际行为与预期行为
+      placeholder: 点击「数据浏览器」时页面显示 Internal Server Error…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 启动 run.py
+        2. 新建 PostgreSQL 连接
+        3. 点击保存
+        4. 打开数据浏览器
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: 数据库类型
+      options:
+        - SQLite
+        - PostgreSQL
+        - MySQL / MariaDB
+        - MongoDB
+        - 仅前端 / 不涉及数据库
+    validations:
+      required: true
+  - type: input
+    id: database-version
+    attributes:
+      label: 数据库版本（如已知）
+      placeholder: PostgreSQL 16.15 / MySQL 8.4 / MongoDB 7.0
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python 版本
+      placeholder: "3.12.10"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 终端报错 / traceback
+      description: 请粘贴服务端终端里的完整错误，而不是只写 “500”
+      render: shell
+  - type: textarea
+    id: config
+    attributes:
+      label: 脱敏后的配置
+      description: host / port / database / user；不要填密码
+      render: json
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 我已经搜索过现有 Issues
+          required: true
+        - label: 我没有粘贴真实密码或生产连接串
+          required: true

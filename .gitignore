@@ -1,0 +1,12 @@
+.venv/
+vendor/
+.tmp/
+.acl-reports/
+__pycache__/
+*.pyc
+data/app.db
+data/app.db-wal
+data/app.db-shm
+data/demo.db
+data/*.sqlite
+.pytest_cache/

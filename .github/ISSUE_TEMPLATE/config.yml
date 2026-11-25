@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: MockFast 使用文档
+    url: https://github.com/sunlanda/mock-fast-api#readme
+    about: 先看快速上手、常见问题与安全说明
+  - name: 接口与开发文档
+    url: https://github.com/sunlanda/mock-fast-api/blob/main/CONTRIBUTING.md
+    about: 本地开发、分支/提交规范和 PR 流程

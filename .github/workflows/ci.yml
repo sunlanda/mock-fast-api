@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Compile Python
+        run: python -m compileall -q app run.py
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check frontend modules
+        working-directory: web
+        run: |
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Smoke test Mock API
+        run: |
+          set -euo pipefail
+          python run.py --port 8787 > /tmp/mockfast.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8787/api/health > /tmp/health.json; then
+              break
+            fi
+            sleep 1
+          done
+
+          cat /tmp/health.json
+          curl -fsS "http://127.0.0.1:8787/mock/user-center?page=1&pageSize=2" > /tmp/mock.json
+
+          python - <<'PY'
+          import json
+
+          payload = json.load(open("/tmp/mock.json", encoding="utf-8"))
+          items = payload["result"]["data"]["list"]
+          pagination = payload["result"]["data"]["pagination"]
+          assert items, "mock list should not be empty"
+          assert pagination["page"] == 1
+          assert pagination["pageSize"] == 2
+          print(f"Mock API OK: {len(items)} rows, total={pagination['total']}")
+          PY
