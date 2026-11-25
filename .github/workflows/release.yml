@@ -97,46 +97,7 @@ jobs:
         shell: pwsh
         working-directory: desktop
         run: |
-          $ErrorActionPreference = "Stop"
-          Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
-          $exe = Join-Path $PWD "release\win-unpacked\MockFast.exe"
-          if (-not (Test-Path $exe)) { throw "Missing $exe" }
-          $app = Start-Process -FilePath $exe -ArgumentList @(
-            "--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-port=9230"
-          ) -PassThru
-          try {
-            $target = $null
-            for ($i = 0; $i -lt 45; $i++) {
-              Start-Sleep -Seconds 1
-              try {
-                $targets = Invoke-RestMethod "http://127.0.0.1:9230/json" -TimeoutSec 2
-                $target = $targets | Where-Object { $_.url -like "http://127.0.0.1:*" } | Select-Object -First 1
-                if ($target) { break }
-              } catch {
-                # keep waiting while Electron starts
-              }
-            }
-            if (-not $target) {
-              Write-Host "--- backend.log ---"
-              Get-Content "$env:APPDATA\MockFast\backend.log" -Tail 80 -ErrorAction SilentlyContinue
-              throw "Electron window did not load a local MockFast URL"
-            }
-            Write-Host "Desktop page: $($target.url)"
-            $response = Invoke-WebRequest -Uri $target.url -UseBasicParsing -TimeoutSec 10
-            if ($response.Content -notmatch "MockFast") {
-              throw "Desktop page did not contain MockFast"
-            }
-            $healthPath = ($target.url -replace "/$", "") + "/api/health"
-            $health = Invoke-RestMethod -Uri $healthPath -TimeoutSec 10
-            if (-not $health.ok) { throw "Backend health check failed" }
-            Write-Host "Desktop smoke OK: $($target.url) version=$($health.version)"
-          } finally {
-            if (-not $app.HasExited) {
-              taskkill /PID $app.Id /T /F 2>$null | Out-Null
-            }
-            Get-Process mockfast-backend -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          }
-
+          & ".\scripts\smoke-test.ps1"
       - name: Show build artifacts
         shell: pwsh
         working-directory: desktop
