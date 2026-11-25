@@ -4,6 +4,7 @@ const fs = require('fs');
 const http = require('http');
 const net = require('net');
 const path = require('path');
+const { spawn, spawnSync } = require('child_process');
 
 const startupDir = path.join(process.env.APPDATA || process.cwd(), 'MockFast');
 const startupLog = path.join(startupDir, 'startup.log');
