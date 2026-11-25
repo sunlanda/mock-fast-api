@@ -52,15 +52,41 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Verify Electron toolchain
+        shell: pwsh
+        working-directory: desktop
+        run: |
+          node --version
+          npm --version
+          if (-not (Test-Path "node_modules\electron-builder")) {
+            throw "electron-builder is missing after npm ci"
+          }
+          if (-not (Test-Path "node_modules\electron\dist\electron.exe")) {
+            Write-Host "Electron binary missing; running install.js"
+            node "node_modules\electron\install.js"
+          }
+          if (-not (Test-Path "node_modules\electron\dist\electron.exe")) {
+            throw "Electron binary is missing after install.js"
+          }
+          & "node_modules\.bin\electron.cmd" --version
+
       - name: Build bundled backend
         working-directory: desktop
         run: npm run build:backend
 
       - name: Package Electron app
+        shell: pwsh
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npm run pack
+        run: |
+          & npm run pack 2>&1 | Tee-Object -FilePath pack.log
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            "## Electron packaging failed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content pack.log -Tail 120 | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            exit $code
+          }
 
       - name: Smoke test packaged desktop app
         shell: pwsh
