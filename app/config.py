@@ -20,7 +20,7 @@ DEMO_DB_PATH = DATA_DIR / "demo.db"
 
 HOST = os.getenv("MOCKFAST_HOST", "127.0.0.1")
 PORT = int(os.getenv("MOCKFAST_PORT", "8787"))
-VERSION = "1.0.0"
+VERSION = "0.0.2"
 
 # None = follow the persisted setting, "1"/"0" = environment override.
 ALLOW_REMOTE_ENV = os.getenv("MOCKFAST_ALLOW_REMOTE_DB")

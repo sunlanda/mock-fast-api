@@ -1,0 +1,48 @@
+appId: com.sunlanda.mockfast
+productName: MockFast
+copyright: Copyright © 2026 sunlanda
+npmRebuild: false
+asar: true
+compression: normal
+electronVersion: 45.5.0
+electronDist: node_modules/electron/dist
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - electron/**/*
+  - build/icon.png
+  - package.json
+
+extraResources:
+  - from: backend/dist/mockfast-backend.exe
+    to: backend/mockfast-backend.exe
+
+win:
+  icon: build/icon.ico
+  executableName: MockFast
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  requestedExecutionLevel: asInvoker
+  forceCodeSigning: false
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: MockFast
+  deleteAppDataOnUninstall: false
+  artifactName: MockFast-${version}-Setup.${ext}
+
+portable:
+  artifactName: MockFast-${version}-Portable.${ext}
+  requestExecutionLevel: user

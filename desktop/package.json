@@ -1,0 +1,31 @@
+{
+  "name": "mockfast-desktop",
+  "version": "0.0.2",
+  "private": true,
+  "description": "MockFast desktop shell — local-first API mock studio with bundled Python backend",
+  "author": {
+    "name": "sunlanda"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sunlanda/mock-fast-api.git"
+  },
+  "homepage": "https://github.com/sunlanda/mock-fast-api",
+  "main": "electron/main.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/start-electron.mjs --dev",
+    "start:prod": "node scripts/start-electron.mjs",
+    "build:backend": "node scripts/build-backend.mjs",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win nsis portable --x64 --publish never",
+    "dist:portable": "electron-builder --win portable --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^45.5.0",
+    "electron-builder": "26.18.0"
+  }
+}

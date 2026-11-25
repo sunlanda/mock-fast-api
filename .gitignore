@@ -3,6 +3,16 @@ vendor/
 .tmp/
 .acl-reports/
 __pycache__/
+
+desktop/node_modules/
+desktop/release/
+desktop/backend/dist/
+desktop/backend/build/
+desktop/backend/*.spec
+desktop/.cache/
+desktop/.test-*/
+desktop/.electron-*/
+desktop/.smoke-*/
 *.pyc
 data/app.db
 data/app.db-wal

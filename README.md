@@ -15,10 +15,12 @@
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.165-009688?logo=fastapi&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" />
   <img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" />
+  <a href="https://github.com/sunlanda/mock-fast-api/releases/latest"><img alt="Desktop Download" src="https://img.shields.io/badge/Download-Windows%20x64-46e0a4?logo=windows&logoColor=white" /></a>
 </p>
 
 <p align="center">
   <a href="#-5-分钟上手">5 分钟上手</a> ·
+  <a href="#-桌面版windows">桌面版</a> ·
   <a href="#-功能地图">功能地图</a> ·
   <a href="#-接口与响应格式">接口文档</a> ·
   <a href="#-数据库可视化工具调研">技术选型</a> ·
@@ -48,11 +50,40 @@ MockFast 把「建表 → 造数据 → 生成接口 → 联调 → 看日志」
 
 ---
 
+## 💻 桌面版（Windows）
+
+不想装 Python、不想开终端？直接下载桌面版：
+
+<p>
+  <a href="https://github.com/sunlanda/mock-fast-api/releases/latest"><strong>⬇️ 下载 MockFast v0.0.2（Windows x64）</strong></a>
+</p>
+
+| 文件 | 说明 |
+| --- | --- |
+| `MockFast-0.0.2-Setup.exe` | 安装版，创建桌面 / 开始菜单快捷方式 |
+| `MockFast-0.0.2-Portable.exe` | 便携版，双击运行，不写注册表 |
+
+桌面版内置 Python 后端（PyInstaller one-file），自动选择空闲本地端口，数据保存在：
+
+```text
+%APPDATA%\MockFast\data
+```
+
+日志在 `%APPDATA%\MockFast\backend.log`。安装包当前未签名，SmartScreen 可能提示「未知发布者」。
+
+> 桌面壳、构建脚本、打包说明全部集中在 [`desktop/`](desktop/README.md)，不污染 Web 版本。
+>
+> 平台：Windows 10/11 x64；macOS / Linux 暂未构建。
+
+---
+
 ## 🚀 5 分钟上手
 
 ### 第 0 步：准备环境
 
 只需要 **Python 3.10+**。Node.js 只有在你打算改前端源码时才需要。
+
+> 如果使用「桌面版」，可以跳过第 0 / 1 步，直接双击安装包；桌面版内置 Python，无需本机环境。
 
 ```bash
 python --version
@@ -542,7 +573,15 @@ mock-fast-api/
 │  ├─ css/style.css
 │  └─ js/                     # 无构建步骤的原生 ES Modules
 ├─ data/                      # 运行时生成：app.db、demo.db
+├─ desktop/                   # Electron 桌面版（独立构建）
+│  ├─ electron/               # main / preload / 启动页 / 错误页
+│  ├─ scripts/                # PyInstaller + Electron 启动脚本
+│  ├─ build/                  # 图标
+│  ├─ electron-builder.yml
+│  ├─ package.json
+│  └─ README.md
 ├─ docs/screenshots/
+├─ docs/releases/
 ├─ run.py
 ├─ run.bat / start.ps1 / run.sh
 ├─ requirements.txt
@@ -592,6 +631,18 @@ node --check js/app.js
 ```
 
 前端没有构建步骤，浏览器直接加载 `web/js/**/*.js` 原生 ES Modules。修改 CSS / JS 后刷新页面即可。
+
+### 桌面版开发
+
+```powershell
+cd desktop
+npm install
+npm run build:backend   # PyInstaller 内置后端
+npm start               # Electron 开发模式
+npm run dist            # 生成 Setup + Portable
+```
+
+完整说明见 [desktop/README.md](desktop/README.md)。
 
 ### 常用自测
 
@@ -670,6 +721,10 @@ python run.py --port 9000
 Bug / 功能请求请使用 [Issue 模板](.github/ISSUE_TEMPLATE)。
 
 CI 会在 PR 上执行 Python 编译、JS 语法检查、启动服务和 Mock API 冒烟测试。
+
+`desktop` 变更会额外触发 Windows 打包 + Electron 启动冒烟测试。
+
+推送 `v*` tag 会触发桌面版 Release 构建，自动上传 Windows 安装包和便携版。
 
 ---
 

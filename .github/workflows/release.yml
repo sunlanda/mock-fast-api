@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-desktop:
+    name: Build Windows desktop
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag matches package version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./desktop/package.json').version"
+          if ("v$version" -ne "${{ github.ref_name }}") {
+            throw "Tag ${{ github.ref_name }} does not match desktop/package.json v$version"
+          }
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt pyinstaller
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build bundled Python backend
+        working-directory: desktop
+        run: npm run build:backend
+
+      - name: Build Windows installer and portable app
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run dist
+
+      - name: Smoke test packaged desktop app
+        shell: pwsh
+        working-directory: desktop
+        run: |
+          $ErrorActionPreference = "Stop"
+          Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+          $exe = Join-Path $PWD "release\win-unpacked\MockFast.exe"
+          if (-not (Test-Path $exe)) { throw "Missing $exe" }
+          $app = Start-Process -FilePath $exe -ArgumentList @(
+            "--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-port=9230"
+          ) -PassThru
+          try {
+            $target = $null
+            for ($i = 0; $i -lt 45; $i++) {
+              Start-Sleep -Seconds 1
+              try {
+                $targets = Invoke-RestMethod "http://127.0.0.1:9230/json" -TimeoutSec 2
+                $target = $targets | Where-Object { $_.url -like "http://127.0.0.1:*" } | Select-Object -First 1
+                if ($target) { break }
+              } catch {
+                # keep waiting while Electron starts
+              }
+            }
+            if (-not $target) {
+              Write-Host "--- backend.log ---"
+              Get-Content "$env:APPDATA\MockFast\backend.log" -Tail 80 -ErrorAction SilentlyContinue
+              throw "Electron window did not load a local MockFast URL"
+            }
+            Write-Host "Desktop page: $($target.url)"
+            $response = Invoke-WebRequest -Uri $target.url -UseBasicParsing -TimeoutSec 10
+            if ($response.Content -notmatch "MockFast") {
+              throw "Desktop page did not contain MockFast"
+            }
+            $healthPath = ($target.url -replace "/$", "") + "/api/health"
+            $health = Invoke-RestMethod -Uri $healthPath -TimeoutSec 10
+            if (-not $health.ok) { throw "Backend health check failed" }
+            Write-Host "Desktop smoke OK: $($target.url) version=$($health.version)"
+          } finally {
+            if (-not $app.HasExited) {
+              taskkill /PID $app.Id /T /F 2>$null | Out-Null
+            }
+            Get-Process mockfast-backend -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Show build artifacts
+        shell: pwsh
+        working-directory: desktop
+        run: Get-ChildItem release -File | Select-Object Name, Length
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: MockFast ${{ github.ref_name }}
+          body_path: docs/releases/0.0.2.md
+          files: |
+            desktop/release/MockFast-*.exe
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false
+          generate_release_notes: false

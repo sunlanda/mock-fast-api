@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MockFast · 启动失败</title>
+  <style>
+    :root { color-scheme: dark; --bg:#070b10; --panel:#0f1721; --line:#1e2d3b; --text:#e9f3f5; --muted:#8ba3b0; --rose:#fb7185; --mint:#46e0a4; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: radial-gradient(800px 460px at 50% -10%, rgba(251,113,133,.10), transparent 60%), var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      display: grid; place-items: center; padding: 24px;
+    }
+    .card {
+      width: min(620px, 100%);
+      padding: 30px;
+      border: 1px solid rgba(251,113,133,.24);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: 0 30px 80px rgba(0,0,0,.36);
+    }
+    .orb {
+      width: 50px; height: 50px; display: grid; place-items: center; border-radius: 14px;
+      background: rgba(251,113,133,.09); border: 1px solid rgba(251,113,133,.22); color: var(--rose);
+      font-size: 24px; margin-bottom: 14px;
+    }
+    h1 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+    p.lead { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+    pre {
+      margin: 18px 0 0; padding: 13px 14px; max-height: 240px; overflow: auto;
+      border: 1px solid var(--line); border-radius: 10px; background: #080d13;
+      color: #c9d8de; font: 11px/1.7 Consolas, monospace; white-space: pre-wrap; word-break: break-word;
+    }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+    button {
+      height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line);
+      background: #121d28; color: var(--text); font-size: 12px; cursor: pointer;
+    }
+    button:hover { border-color: #2a3d4d; background: #162330; }
+    button.primary { background: var(--mint); border-color: transparent; color: #032218; font-weight: 600; }
+    .foot { margin-top: 17px; color: #5f7785; font-size: 10px; }
+    code { color: var(--mint); font-family: Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="orb">!</div>
+    <h1>MockFast 没有启动成功</h1>
+    <p class="lead">本地 Python 后端没有正常就绪。下面是启动器捕获到的信息。</p>
+    <pre id="message">正在读取错误信息…</pre>
+    <div class="actions">
+      <button class="primary" id="retry">重新启动后端</button>
+      <button id="log">打开日志</button>
+      <button id="quit">退出</button>
+    </div>
+    <p class="foot" id="log-path"></p>
+  </main>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get('message') || '未知错误';
+    const logPath = params.get('log') || '';
+    document.getElementById('message').textContent = message;
+    document.getElementById('log-path').textContent = logPath ? `日志：${logPath}` : '';
+    const api = window.mockfastDesktop;
+    document.getElementById('retry').addEventListener('click', () => {
+      if (api) api.retry();
+      else window.location.reload();
+    });
+    document.getElementById('log').addEventListener('click', () => {
+      if (api) api.openLog();
+    });
+    document.getElementById('quit').addEventListener('click', () => {
+      if (api) api.quit();
+      else window.close();
+    });
+  </script>
+</body>
+</html>
