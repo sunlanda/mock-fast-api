@@ -50,9 +50,15 @@ try {
     }
     try {
       $targets = Invoke-RestMethod "http://127.0.0.1:$DebugPort/json" -TimeoutSec 2 -NoProxy
+      $script:allTargets = @($targets | Select-Object type, title, url)
+      $errorTarget = $targets | Where-Object { $_.url -like "*error.html*" } | Select-Object -First 1
+      if ($errorTarget) {
+        throw "App loaded error page: $($errorTarget.url)"
+      }
       $target = $targets | Where-Object { $_.url -like "http://127.0.0.1:*" } | Select-Object -First 1
       if ($target) { break }
     } catch {
+      if ($_.Exception.Message -like "App loaded error page*") { throw }
       # Electron/DevTools may not be ready yet.
     }
   }
@@ -98,11 +104,24 @@ try {
         Select-Object -ExpandProperty FullName)
     }
   }
+  $lines += "--- debug targets ---"
+  $lines += ($script:allTargets | Format-Table | Out-String)
   $lines += "--- processes ---"
   $lines += (Get-Process MockFast, mockfast-backend -ErrorAction SilentlyContinue |
     Select-Object Id, ProcessName | Format-Table | Out-String)
   Write-Summary "Desktop smoke failed" $lines
-  Write-Host "::error title=Desktop smoke failed::$message"
+  $annotation = $message
+  if (Test-Path "$smokeData\startup.log") {
+    $annotation += " || startup: " + ((Get-Content "$smokeData\startup.log" -Tail 3) -join " / ")
+  }
+  if (Test-Path "$smokeData\backend.log") {
+    $annotation += " || backend: " + ((Get-Content "$smokeData\backend.log" -Tail 3) -join " / ")
+  }
+  if (Test-Path $stderr) {
+    $annotation += " || stderr: " + ((Get-Content $stderr -Tail 3) -join " / ")
+  }
+  $annotation = ($annotation -replace "`r?`n", " ").Substring(0, [Math]::Min(900, $annotation.Length))
+  Write-Host "::error title=Desktop smoke failed::$annotation"
   throw
 } finally {
   if ($app -and -not $app.HasExited) {
