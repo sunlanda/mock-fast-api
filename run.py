@@ -15,6 +15,19 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 
+def _force_utf8_stdio() -> None:
+    """Avoid cp1252 crashes on Windows when stdout is redirected to a log file."""
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, OSError, ValueError):
+                pass
+
+
+_force_utf8_stdio()
+
+
 def port_available(host: str, port: int) -> bool:
     bind_host = host if host not in ("0.0.0.0", "::") else "127.0.0.1"
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

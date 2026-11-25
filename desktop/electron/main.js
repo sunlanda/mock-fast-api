@@ -287,6 +287,7 @@ async function startBackend() {
         TMP: runtimeTemp,
         PYTHONUNBUFFERED: '1',
         PYTHONUTF8: '1',
+        PYTHONIOENCODING: 'utf-8',
       },
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],

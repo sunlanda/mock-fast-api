@@ -38,6 +38,8 @@ function Show-Failure([string]$message) {
 $env:MOCKFAST_DATA_DIR = $data
 $env:MOCKFAST_HOST = "127.0.0.1"
 $env:MOCKFAST_PORT = "$port"
+$env:PYTHONUTF8 = "1"
+$env:PYTHONIOENCODING = "utf-8"
 $app = Start-Process -FilePath $exe -ArgumentList @("--port", "$port") -PassThru `
   -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 
