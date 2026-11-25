@@ -7,7 +7,10 @@ $ErrorActionPreference = "Stop"
 $desktop = Resolve-Path (Join-Path $PSScriptRoot "..")
 $exe = Join-Path $desktop "release\win-unpacked\MockFast.exe"
 $appData = Join-Path $env:APPDATA "MockFast"
+$runnerTemp = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { $env:TEMP }
+$smokeData = Join-Path $runnerTemp "mockfast-smoke-$PID"
 $logDir = Join-Path $desktop ".smoke-logs"
+New-Item -ItemType Directory -Force $smokeData | Out-Null
 New-Item -ItemType Directory -Force $logDir | Out-Null
 $stdout = Join-Path $logDir "electron.stdout.log"
 $stderr = Join-Path $logDir "electron.stderr.log"
@@ -29,10 +32,14 @@ if (-not (Test-Path $exe)) {
 }
 
 Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
-$app = Start-Process -FilePath $exe -ArgumentList @(
+$arguments = @(
   "--headless", "--no-sandbox", "--disable-gpu",
+  "--disable-crash-reporter",
+  "--user-data-dir=$smokeData",
   "--remote-debugging-port=$DebugPort", "--enable-logging"
-) -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+)
+$app = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru `
+  -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 
 $target = $null
 try {
@@ -42,7 +49,7 @@ try {
       throw "MockFast.exe exited early with code $($app.ExitCode)"
     }
     try {
-      $targets = Invoke-RestMethod "http://127.0.0.1:$DebugPort/json" -TimeoutSec 2
+      $targets = Invoke-RestMethod "http://127.0.0.1:$DebugPort/json" -TimeoutSec 2 -NoProxy
       $target = $targets | Where-Object { $_.url -like "http://127.0.0.1:*" } | Select-Object -First 1
       if ($target) { break }
     } catch {
@@ -55,36 +62,47 @@ try {
   }
 
   Write-Host "Desktop page: $($target.url)"
-  $response = Invoke-WebRequest -Uri $target.url -UseBasicParsing -TimeoutSec 10
+  $response = Invoke-WebRequest -Uri $target.url -UseBasicParsing -TimeoutSec 10 -NoProxy
   if ($response.Content -notmatch "MockFast") {
     throw "Desktop page did not contain the MockFast UI"
   }
 
-  $health = Invoke-RestMethod -Uri (($target.url -replace "/$", "") + "/api/health") -TimeoutSec 10
+  $health = Invoke-RestMethod -Uri (($target.url -replace "/$", "") + "/api/health") -TimeoutSec 10 -NoProxy
   if (-not $health.ok) {
     throw "Backend health check did not return ok=true"
   }
 
   Write-Host "Desktop smoke OK: $($target.url) version=$($health.version)"
 } catch {
+  $message = $_.Exception.Message
   $lines = @()
-  $lines += "Error: $($_.Exception.Message)"
+  $lines += "Error: $message"
   $lines += ""
-  foreach ($file in @("$appData\startup.log", "$appData\backend.log", $stderr, $stdout)) {
+  foreach ($file in @(
+    "$smokeData\startup.log",
+    "$smokeData\backend.log",
+    "$appData\startup.log",
+    "$appData\backend.log",
+    $stderr,
+    $stdout
+  )) {
     if (Test-Path $file) {
       $lines += "--- $file ---"
       $lines += (Get-Content $file -Tail 120 -ErrorAction SilentlyContinue)
     }
   }
-  if (Test-Path "$appData") {
-    $lines += "--- $appData ---"
-    $lines += (Get-ChildItem "$appData" -Recurse -Force -ErrorAction SilentlyContinue |
-      Select-Object -ExpandProperty FullName)
+  foreach ($dir in @($smokeData, $appData)) {
+    if (Test-Path $dir) {
+      $lines += "--- $dir ---"
+      $lines += (Get-ChildItem $dir -Recurse -Force -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty FullName)
+    }
   }
   $lines += "--- processes ---"
   $lines += (Get-Process MockFast, mockfast-backend -ErrorAction SilentlyContinue |
     Select-Object Id, ProcessName | Format-Table | Out-String)
   Write-Summary "Desktop smoke failed" $lines
+  Write-Host "::error title=Desktop smoke failed::$message"
   throw
 } finally {
   if ($app -and -not $app.HasExited) {
