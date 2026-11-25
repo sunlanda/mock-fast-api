@@ -17,6 +17,9 @@ jobs:
     name: Build Windows desktop
     runs-on: windows-2022
     timeout-minutes: 40
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,8 +64,12 @@ jobs:
             throw "electron-builder is missing after npm ci"
           }
           if (-not (Test-Path "node_modules\electron\dist\electron.exe")) {
-            Write-Host "Electron binary missing; running install.js"
+            Write-Host "Electron binary missing; running install.js with mirror"
             node "node_modules\electron\install.js"
+            if ($LASTEXITCODE -ne 0) {
+              "## Electron binary install failed (exit $LASTEXITCODE)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+              throw "Electron install.js failed"
+            }
           }
           if (-not (Test-Path "node_modules\electron\dist\electron.exe")) {
             throw "Electron binary is missing after install.js"
