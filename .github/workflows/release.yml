@@ -79,6 +79,12 @@ jobs:
         working-directory: desktop
         run: npm run build:backend
 
+      - name: Smoke test bundled backend
+        shell: pwsh
+        working-directory: desktop
+        run: |
+          & ".\scripts\backend-smoke.ps1"
+
       - name: Build Windows installer and portable app
         shell: pwsh
         working-directory: desktop
